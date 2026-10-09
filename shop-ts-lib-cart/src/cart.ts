@@ -20,15 +20,31 @@ export class InvalidQuantityError extends Error {
   }
 }
 
+export class InvalidDiscountError extends Error {
+  constructor(readonly percent: number) {
+    super(`discount percent must be an integer from 0 through 100, got ${percent}`);
+    this.name = "InvalidDiscountError";
+  }
+}
+
 const MINIMUM_QUANTITY = 1;
 const MAXIMUM_QUANTITY = 99;
 const CENTS_PER_UNIT = 100;
+const FULL_DISCOUNT_PERCENT = 100;
 
 export function cents(amount: number): Cents {
   if (!Number.isSafeInteger(amount) || amount < 0) {
     throw new InvalidAmountError(amount);
   }
   return amount as Cents;
+}
+
+export function discountedUnitCents(listPriceCents: Cents, discountPercent: number): Cents {
+  if (!Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > FULL_DISCOUNT_PERCENT) {
+    throw new InvalidDiscountError(discountPercent);
+  }
+  const reduction = Math.floor((listPriceCents * discountPercent) / FULL_DISCOUNT_PERCENT);
+  return cents(listPriceCents - reduction);
 }
 
 export function lineTotal(line: CartLine): Cents {

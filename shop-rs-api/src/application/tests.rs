@@ -5,8 +5,8 @@ use async_trait::async_trait;
 
 use super::service::{CartService, CatalogService, ShopError};
 use crate::domain::model::{
-    Cart, CartId, CartLine, CartStatus, DomainError, Money, Order, OrderDraft, Product, Quantity,
-    Sku,
+    Cart, CartId, CartLine, CartStatus, DiscountPercent, DomainError, Money, Order, OrderDraft,
+    Product, Quantity, Sku,
 };
 use crate::domain::port::{CartRepository, OrderRepository, ProductRepository, RepositoryError};
 
@@ -129,12 +129,14 @@ fn catalog() -> Vec<Product> {
             sku: Sku::parse("MUG-STONE").unwrap(),
             name: "Stoneware mug".to_owned(),
             price: Money::from_cents(1800).unwrap(),
+            discount_percent: DiscountPercent::none(),
             stock: 10,
         },
         Product {
             sku: Sku::parse("LAMP-DESK").unwrap(),
             name: "Brass desk lamp".to_owned(),
             price: Money::from_cents(12900).unwrap(),
+            discount_percent: DiscountPercent::none(),
             stock: 2,
         },
     ]

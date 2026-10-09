@@ -37,7 +37,7 @@ test("cart lines", async ({ page }) => {
   await expect(page.getByText("Stoneware mug", { exact: true })).toBeVisible();
   await page.getByLabel("Quantity for Stoneware mug").fill("2");
   await page.getByRole("button", { name: "Add Stoneware mug" }).click();
-  await expect(page.getByLabel("Cart")).toContainText("Total $36.00");
+  await expect(page.getByLabel("Cart")).toContainText("Total $32.40");
   await expect(page).toHaveScreenshot("cart.png", { fullPage: true });
 });
 
@@ -46,8 +46,8 @@ test("order placed", async ({ page }) => {
   await expect(page.getByText("Stoneware mug", { exact: true })).toBeVisible();
   await page.getByLabel("Quantity for Stoneware mug").fill("2");
   await page.getByRole("button", { name: "Add Stoneware mug" }).click();
-  await expect(page.getByLabel("Cart")).toContainText("Total $36.00");
+  await expect(page.getByLabel("Cart")).toContainText("Total $32.40");
   await page.getByRole("button", { name: "Checkout" }).click();
-  await expect(page.getByRole("status")).toHaveText("Order 1 placed for $36.00");
+  await expect(page.getByRole("status")).toHaveText("Order 1 placed for $32.40");
   await expect(page).toHaveScreenshot("order.png", { fullPage: true });
 });

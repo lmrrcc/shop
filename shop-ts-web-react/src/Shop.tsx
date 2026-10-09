@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { cartTotal, cents, formatCents, lineTotal, type CartLine as PricedLine } from "shop-ts-lib-cart";
+import { cartTotal, cents, discountedUnitCents, formatCents, lineTotal, type CartLine as PricedLine } from "shop-ts-lib-cart";
 
 import { addCartItem, checkoutCart, listProducts, openCart, ShopRequestError, type Cart, type Order, type Product } from "./shopApi";
 
@@ -12,7 +12,9 @@ interface Props {
 
 function pricedLine(line: Cart["lines"][number], products: readonly Product[]): PricedLine {
   const product = products.find((candidate) => candidate.sku === line.sku);
-  return { sku: line.sku, quantity: line.quantity, unitPriceCents: cents(product?.priceCents ?? 0) };
+  const listPriceCents = cents(product?.priceCents ?? 0);
+  const discountPercent = product?.discountPercent ?? 0;
+  return { sku: line.sku, quantity: line.quantity, unitPriceCents: discountedUnitCents(listPriceCents, discountPercent) };
 }
 
 function messageOf(error: unknown): string {

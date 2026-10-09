@@ -5,6 +5,7 @@ playwright-report/
 test-results/
 .cherry-test/
 *.lcov
+*.profraw
 .env
 .env.test
 .DS_Store
