@@ -1,0 +1,33 @@
+[package]
+name = "shop-rs-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shop showcase API: catalog, cart and checkout"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "shop-rs-api"
+path = "src/main.rs"
+
+[dependencies]
+async-trait = "0.1"
+axum = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "macros", "migrate"] }
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+utoipa = { version = "5", features = ["axum_extras"] }
+
+[dev-dependencies]
+anyhow = "1"
+http-body-util = "0.1"
+serde_json = "1"
+cherry-test-core = { path = "../../../test/cherry-test-core", package = "cherry-test-core" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tower = { version = "0.5", features = ["util"] }

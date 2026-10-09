@@ -1,0 +1,32 @@
+services:
+  shop-db:
+    image: postgres:16-alpine
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ${SHOP_DB_USER:?set SHOP_DB_USER in .env (see .env.example)}
+      POSTGRES_PASSWORD: ${SHOP_DB_PASSWORD:?set SHOP_DB_PASSWORD in .env (see .env.example)}
+      POSTGRES_DB: ${SHOP_DB_NAME:?set SHOP_DB_NAME in .env (see .env.example)}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  shop-rs-api:
+    build:
+      context: .
+      dockerfile: shop-rs-api/Dockerfile
+    ports:
+      - "3000"
+    environment:
+      DATABASE_URL: postgres://${SHOP_DB_USER}:${SHOP_DB_PASSWORD}@shop-db:5432/${SHOP_DB_NAME}
+      RUST_LOG: shop_rs_api=info
+    depends_on:
+      shop-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:3000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

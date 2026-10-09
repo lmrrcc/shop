@@ -1,0 +1,33 @@
+:root {
+  color: #171c24;
+  background: #fcfcfd;
+  color-scheme: light;
+  font: 16px/1.5 ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+button,
+input {
+  font: inherit;
+  caret-color: transparent;
+}
+
+[role="alert"] {
+  color: #b42323;
+}

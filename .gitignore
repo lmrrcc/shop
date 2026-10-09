@@ -1,0 +1,10 @@
+target/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+.cherry-test/
+*.lcov
+.env
+.env.test
+.DS_Store
