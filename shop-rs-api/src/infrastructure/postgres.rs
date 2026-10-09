@@ -3,8 +3,8 @@ use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use sqlx::Row;
 
 use crate::domain::model::{
-    Cart, CartId, CartLine, CartStatus, DomainError, Money, Order, OrderDraft, Product, Quantity,
-    Sku,
+    Cart, CartId, CartLine, CartStatus, DiscountPercent, DomainError, Money, Order, OrderDraft,
+    Product, Quantity, Sku,
 };
 use crate::domain::port::{CartRepository, OrderRepository, ProductRepository, RepositoryError};
 
@@ -40,20 +40,24 @@ fn product_from_row(row: &PgRow) -> Result<Product, RepositoryError> {
     let sku: String = checked(row.try_get("sku"), "decode_product")?;
     let name: String = checked(row.try_get("name"), "decode_product")?;
     let price_cents: i64 = checked(row.try_get("price_cents"), "decode_product")?;
+    let discount_percent: i32 = checked(row.try_get("discount_percent"), "decode_product")?;
     let stock: i32 = checked(row.try_get("stock"), "decode_product")?;
-    product_from_parts(&sku, name, price_cents, stock)
+    product_from_parts(&sku, name, price_cents, i64::from(discount_percent), stock)
 }
 
 fn product_from_parts(
     sku: &str,
     name: String,
     price_cents: i64,
+    discount_percent: i64,
     stock: i32,
 ) -> Result<Product, RepositoryError> {
     Ok(Product {
         sku: Sku::parse(sku).map_err(RepositoryError::Rejected)?,
         name,
         price: Money::from_cents(price_cents).map_err(RepositoryError::Rejected)?,
+        discount_percent: DiscountPercent::parse(discount_percent)
+            .map_err(RepositoryError::Rejected)?,
         stock: u32::try_from(stock)
             .map_err(|_| RepositoryError::Rejected(DomainError::InvalidQuantity))?,
     })
@@ -73,7 +77,9 @@ impl PostgresProductRepository {
 impl ProductRepository for PostgresProductRepository {
     async fn list(&self) -> Result<Vec<Product>, RepositoryError> {
         let rows = checked(
-            sqlx::query(r#"SELECT SKU, NAME, PRICE_CENTS, STOCK FROM product ORDER BY SKU"#)
+            sqlx::query(
+                r#"SELECT SKU, NAME, PRICE_CENTS, DISCOUNT_PERCENT, STOCK FROM product ORDER BY SKU"#,
+            )
                 .fetch_all(&self.pool)
                 .await,
             "list_products",
@@ -82,7 +88,9 @@ impl ProductRepository for PostgresProductRepository {
     }
     async fn find_by_sku(&self, sku: &Sku) -> Result<Option<Product>, RepositoryError> {
         let row = checked(
-            sqlx::query(r#"SELECT SKU, NAME, PRICE_CENTS, STOCK FROM product WHERE SKU = $1"#)
+            sqlx::query(
+                r#"SELECT SKU, NAME, PRICE_CENTS, DISCOUNT_PERCENT, STOCK FROM product WHERE SKU = $1"#,
+            )
                 .bind(sku.as_str())
                 .fetch_optional(&self.pool)
                 .await,
@@ -93,7 +101,9 @@ impl ProductRepository for PostgresProductRepository {
     async fn find_by_skus(&self, skus: &[Sku]) -> Result<Vec<Product>, RepositoryError> {
         let values: Vec<String> = skus.iter().map(|sku| sku.as_str().to_owned()).collect();
         let rows = checked(
-            sqlx::query(r#"SELECT SKU, NAME, PRICE_CENTS, STOCK FROM product WHERE SKU = ANY($1)"#)
+            sqlx::query(
+                r#"SELECT SKU, NAME, PRICE_CENTS, DISCOUNT_PERCENT, STOCK FROM product WHERE SKU = ANY($1)"#,
+            )
                 .bind(&values)
                 .fetch_all(&self.pool)
                 .await,
@@ -324,17 +334,17 @@ mod tests {
 
     #[test]
     fn product_parts_reject_values_the_schema_also_forbids() {
-        assert!(product_from_parts("MUG-STONE", "Mug".to_owned(), 1800, 4).is_ok());
+        assert!(product_from_parts("MUG-STONE", "Mug".to_owned(), 1800, 10, 4).is_ok());
         assert!(matches!(
-            product_from_parts("no", "Mug".to_owned(), 1800, 4),
+            product_from_parts("no", "Mug".to_owned(), 1800, 0, 4),
             Err(RepositoryError::Rejected(DomainError::InvalidSku))
         ));
         assert!(matches!(
-            product_from_parts("MUG-STONE", "Mug".to_owned(), -1, 4),
+            product_from_parts("MUG-STONE", "Mug".to_owned(), -1, 0, 4),
             Err(RepositoryError::Rejected(DomainError::InvalidMoney))
         ));
         assert!(matches!(
-            product_from_parts("MUG-STONE", "Mug".to_owned(), 1800, -1),
+            product_from_parts("MUG-STONE", "Mug".to_owned(), 1800, 0, -1),
             Err(RepositoryError::Rejected(DomainError::InvalidQuantity))
         ));
     }

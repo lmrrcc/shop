@@ -57,6 +57,9 @@ async fn shop_project_catalog_suite_lists_seeded_products_test(env: TestEnv) {
     assert_eq!(body["total"], 4);
     assert_eq!(body["items"][0]["sku"], "LAMP-DESK");
     assert_eq!(body["items"][0]["price_cents"], 12900);
+    assert_eq!(body["items"][0]["discount_percent"], 0);
+    assert_eq!(body["items"][1]["sku"], "MUG-STONE");
+    assert_eq!(body["items"][1]["discount_percent"], 10);
 }
 
 #[cherry_test(scope = "shop_checkout")]
@@ -140,6 +143,24 @@ async fn shop_project_checkout_suite_places_order_and_decrements_stock_test(env:
         .await;
     cart.assert_status(200);
     assert_eq!(cart.response_body_json()?["status"], "checked_out");
+}
+
+#[cherry_test(scope = "shop_checkout")]
+async fn shop_project_checkout_suite_applies_the_mug_discount_test(env: TestEnv) {
+    let cart_id = open_cart(&env).await?;
+    add_item(&env, &cart_id, "MUG-STONE", 2)
+        .await?
+        .assert_status(200);
+    let response = env
+        .project("shop")
+        .service("api")?
+        .post(&format!("/v1/carts/{cart_id}/checkout"))
+        .send()
+        .await;
+    response.assert_status(201);
+    let order = response.response_body_json()?;
+    assert_eq!(order["lines"][0]["unit_price_cents"], 1620);
+    assert_eq!(order["total_cents"], 3240);
 }
 
 #[cherry_test(scope = "shop_checkout")]

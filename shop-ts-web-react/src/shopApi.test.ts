@@ -25,8 +25,8 @@ afterEach(() => {
 
 describe("shop API", () => {
   it("maps catalog rows into products", async () => {
-    install(json({ items: [{ sku: "MUG-STONE", name: "Stoneware mug", price_cents: 1800, stock: 1000 }] }));
-    await expect(listProducts(base)).resolves.toEqual([{ sku: "MUG-STONE", name: "Stoneware mug", priceCents: 1800, stock: 1000 }]);
+    install(json({ items: [{ sku: "MUG-STONE", name: "Stoneware mug", price_cents: 1800, discount_percent: 10, stock: 1000 }] }));
+    await expect(listProducts(base)).resolves.toEqual([{ sku: "MUG-STONE", name: "Stoneware mug", priceCents: 1800, discountPercent: 10, stock: 1000 }]);
   });
 
   it("opens a cart", async () => {

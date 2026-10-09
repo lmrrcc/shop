@@ -3,6 +3,7 @@ use std::fmt;
 const MINIMUM_SKU_LENGTH: usize = 3;
 const MAXIMUM_SKU_LENGTH: usize = 32;
 const MAXIMUM_LINE_QUANTITY: u32 = 99;
+const MAXIMUM_DISCOUNT_PERCENT: u8 = 100;
 const CART_ID_LENGTH: usize = 36;
 const CART_ID_DASH_POSITIONS: [usize; 4] = [8, 13, 18, 23];
 
@@ -11,6 +12,7 @@ pub enum DomainError {
     InvalidSku,
     InvalidQuantity,
     InvalidMoney,
+    InvalidDiscount,
     InvalidCartId,
     AmountOverflow,
     ProductNotFound(Sku),
@@ -31,6 +33,9 @@ impl fmt::Display for DomainError {
                 write!(formatter, "quantity must be between 1 and {MAXIMUM_LINE_QUANTITY}")
             }
             Self::InvalidMoney => write!(formatter, "amount must not be negative"),
+            Self::InvalidDiscount => {
+                write!(formatter, "discount percent must be an integer from 0 through 100")
+            }
             Self::InvalidCartId => write!(formatter, "cart id must be a UUID"),
             Self::AmountOverflow => write!(formatter, "order total exceeds the supported range"),
             Self::ProductNotFound(sku) => write!(formatter, "product {sku} does not exist"),
@@ -72,6 +77,11 @@ impl Money {
             .map(Self)
             .ok_or(DomainError::AmountOverflow)
     }
+    pub fn discounted(self, percent: DiscountPercent) -> Self {
+        let reduction =
+            i128::from(self.0) * i128::from(percent.value()) / i128::from(MAXIMUM_DISCOUNT_PERCENT);
+        Self(self.0 - reduction as i64)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -90,6 +100,24 @@ impl Sku {
     }
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DiscountPercent(u8);
+
+impl DiscountPercent {
+    pub const fn none() -> Self {
+        Self(0)
+    }
+    pub fn parse(percent: i64) -> Result<Self, DomainError> {
+        match u8::try_from(percent) {
+            Ok(value) if value <= MAXIMUM_DISCOUNT_PERCENT => Ok(Self(value)),
+            _ => Err(DomainError::InvalidDiscount),
+        }
+    }
+    pub fn value(self) -> u8 {
+        self.0
     }
 }
 
@@ -149,6 +177,7 @@ pub struct Product {
     pub sku: Sku,
     pub name: String,
     pub price: Money,
+    pub discount_percent: DiscountPercent,
     pub stock: u32,
 }
 
@@ -251,7 +280,7 @@ impl Cart {
         Ok(OrderLine {
             sku: line.sku.clone(),
             quantity: line.quantity,
-            unit_price: product.price,
+            unit_price: product.price.discounted(product.discount_percent),
         })
     }
 }
@@ -265,10 +294,20 @@ mod tests {
     }
 
     fn product(raw_sku: &str, price_cents: i64, stock: u32) -> Product {
+        product_with_discount(raw_sku, price_cents, 0, stock)
+    }
+
+    fn product_with_discount(
+        raw_sku: &str,
+        price_cents: i64,
+        discount_percent: i64,
+        stock: u32,
+    ) -> Product {
         Product {
             sku: sku(raw_sku),
             name: raw_sku.to_owned(),
             price: Money::from_cents(price_cents).unwrap(),
+            discount_percent: DiscountPercent::parse(discount_percent).unwrap(),
             stock,
         }
     }
@@ -389,6 +428,16 @@ mod tests {
         }
 
         #[test]
+        fn applies_a_discount_percent_before_the_quantity() {
+            let products = [product_with_discount("MUG-001", 1800, 10, 10)];
+            let draft = cart(CartStatus::Open, vec![line("MUG-001", 2)])
+                .checkout(&products)
+                .unwrap();
+            assert_eq!(draft.lines[0].unit_price.cents(), 1620);
+            assert_eq!(draft.total.cents(), 3240);
+        }
+
+        #[test]
         fn rejects_empty_cart() {
             let result = cart(CartStatus::Open, vec![]).checkout(&[]);
             assert_eq!(result, Err(DomainError::EmptyCart));
@@ -460,6 +509,7 @@ mod tests {
             DomainError::InvalidSku.to_string(),
             DomainError::InvalidQuantity.to_string(),
             DomainError::InvalidMoney.to_string(),
+            DomainError::InvalidDiscount.to_string(),
             DomainError::InvalidCartId.to_string(),
             DomainError::AmountOverflow.to_string(),
             DomainError::ProductNotFound(sku.clone()).to_string(),

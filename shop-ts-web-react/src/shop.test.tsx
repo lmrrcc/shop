@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Shop } from "./Shop";
 
-const mug = { sku: "MUG-STONE", name: "Stoneware mug", price_cents: 1800, stock: 998 };
-const lamp = { sku: "LAMP-DESK", name: "Brass desk lamp", price_cents: 12900, stock: 2 };
+const mug = { sku: "MUG-STONE", name: "Stoneware mug", price_cents: 1800, discount_percent: 10, stock: 998 };
+const lamp = { sku: "LAMP-DESK", name: "Brass desk lamp", price_cents: 12900, discount_percent: 0, stock: 2 };
 const catalog = { items: [mug, lamp] };
 const cartId = "0b8f6c1e-4a2d-4e1f-9c3b-2d5e7f8a9b0c";
 
@@ -95,9 +95,10 @@ describe("Shop", () => {
     await user.clear(screen.getByLabelText("Quantity for Stoneware mug"));
     await user.type(screen.getByLabelText("Quantity for Stoneware mug"), "2");
     await user.click(screen.getByRole("button", { name: "Add Stoneware mug" }));
-    expect(await screen.findByText("Total $36.00")).toBeInTheDocument();
+    expect(await screen.findByText("Total $32.40")).toBeInTheDocument();
     expect(screen.getByLabelText("Cart")).toHaveTextContent("Stoneware mug");
-    expect(screen.getByLabelText("Cart")).toHaveTextContent("$36.00");
+    expect(screen.getByLabelText("Cart")).toHaveTextContent("$32.40");
+    expect(screen.getByText("$18.00")).toBeInTheDocument();
   });
 
   it("disables actions while an add is in flight", async () => {
@@ -113,7 +114,7 @@ describe("Shop", () => {
     await user.click(add);
     expect(add).toBeDisabled();
     release(json(cart([{ sku: "MUG-STONE", quantity: 1 }])));
-    expect(await screen.findByText("Total $18.00")).toBeInTheDocument();
+    expect(await screen.findByText("Total $16.20")).toBeInTheDocument();
     expect(add).toBeEnabled();
   });
 
@@ -149,7 +150,7 @@ describe("Shop", () => {
     });
     render(<Shop apiBase="" />);
     await user.click(await screen.findByRole("button", { name: "Add Stoneware mug" }));
-    await screen.findByText("Total $18.00");
+    await screen.findByText("Total $16.20");
     await user.click(screen.getByRole("button", { name: "Checkout" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Order 4 placed for $18.00");
     expect(screen.getByLabelText("Cart")).toHaveTextContent("The cart is empty.");

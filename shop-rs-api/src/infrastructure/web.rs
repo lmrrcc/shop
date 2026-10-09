@@ -11,7 +11,8 @@ use utoipa::{OpenApi, ToSchema};
 
 use crate::application::service::{CartService, CatalogService, ShopError};
 use crate::domain::model::{
-    Cart, CartId, CartLine, CartStatus, DomainError, Order, OrderLine, Product, Quantity, Sku,
+    Cart, CartId, CartLine, CartStatus, DiscountPercent, DomainError, Order, OrderLine, Product,
+    Quantity, Sku,
 };
 
 #[derive(Clone)]
@@ -25,6 +26,7 @@ pub struct ProductResponse {
     sku: String,
     name: String,
     price_cents: i64,
+    discount_percent: u8,
     stock: u32,
 }
 
@@ -34,6 +36,7 @@ impl From<Product> for ProductResponse {
             sku: product.sku.as_str().to_owned(),
             name: product.name,
             price_cents: product.price.cents(),
+            discount_percent: product.discount_percent.value(),
             stock: product.stock,
         }
     }
@@ -163,6 +166,7 @@ impl From<DomainError> for ApiError {
             DomainError::InvalidSku => (StatusCode::UNPROCESSABLE_ENTITY, "invalid_sku"),
             DomainError::InvalidQuantity => (StatusCode::UNPROCESSABLE_ENTITY, "invalid_quantity"),
             DomainError::InvalidMoney => (StatusCode::UNPROCESSABLE_ENTITY, "invalid_money"),
+            DomainError::InvalidDiscount => (StatusCode::UNPROCESSABLE_ENTITY, "invalid_discount"),
             DomainError::InvalidCartId => (StatusCode::UNPROCESSABLE_ENTITY, "invalid_cart_id"),
             DomainError::AmountOverflow => (StatusCode::UNPROCESSABLE_ENTITY, "amount_overflow"),
             DomainError::EmptyCart => (StatusCode::UNPROCESSABLE_ENTITY, "empty_cart"),
@@ -487,6 +491,7 @@ mod tests {
             sku: sku(raw),
             name: raw.to_owned(),
             price: Money::from_cents(price).unwrap(),
+            discount_percent: DiscountPercent::none(),
             stock,
         }
     }
@@ -561,6 +566,11 @@ mod tests {
                 DomainError::InvalidMoney,
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "invalid_money",
+            ),
+            (
+                DomainError::InvalidDiscount,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_discount",
             ),
             (
                 DomainError::InvalidCartId,

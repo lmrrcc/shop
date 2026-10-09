@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cartTotal, cents, formatCents, InvalidAmountError, InvalidQuantityError, lineTotal } from "./cart";
+import { cartTotal, cents, discountedUnitCents, formatCents, InvalidAmountError, InvalidQuantityError, lineTotal } from "./cart";
 
 describe("cents", () => {
   it("accepts zero", () => {
@@ -10,6 +10,17 @@ describe("cents", () => {
   });
   it("rejects fractional amounts", () => {
     expect(() => cents(10.5)).toThrow(InvalidAmountError);
+  });
+});
+
+describe("discountedUnitCents", () => {
+  it("leaves a list price unchanged at zero percent", () => {
+    expect(discountedUnitCents(cents(1800), 0)).toBe(1800);
+  });
+  it("takes ten percent off before the quantity is applied", () => {
+    const unit = discountedUnitCents(cents(1800), 10);
+    expect(unit).toBe(1620);
+    expect(lineTotal({ sku: "MUG-STONE", quantity: 2, unitPriceCents: unit })).toBe(3240);
   });
 });
 

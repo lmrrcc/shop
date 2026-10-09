@@ -39,9 +39,9 @@ test("checks out two mugs and a second empty cart", async ({ page }) => {
   await expect(page.getByText("Stoneware mug", { exact: true })).toBeVisible();
   await page.getByLabel("Quantity for Stoneware mug").fill("2");
   await page.getByRole("button", { name: "Add Stoneware mug" }).click();
-  await expect(page.getByLabel("Cart")).toContainText("$36.00");
+  await expect(page.getByLabel("Cart")).toContainText("$32.40");
   await page.getByRole("button", { name: "Checkout" }).click();
-  await expect(page.getByRole("status")).toContainText("placed for $36.00");
+  await expect(page.getByRole("status")).toContainText("placed for $32.40");
   await expect(page.getByLabel("Cart")).toContainText("The cart is empty.");
   await page.getByRole("button", { name: "Checkout" }).click();
   await expect(page.getByRole("alert")).toHaveText("cart has no items");

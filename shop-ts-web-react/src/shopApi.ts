@@ -2,6 +2,7 @@ export interface Product {
   readonly sku: string;
   readonly name: string;
   readonly priceCents: number;
+  readonly discountPercent: number;
   readonly stock: number;
 }
 
@@ -37,6 +38,7 @@ interface ProductBody {
   readonly sku: string;
   readonly name: string;
   readonly price_cents: number;
+  readonly discount_percent: number;
   readonly stock: number;
 }
 
@@ -53,7 +55,13 @@ interface OrderBody {
 }
 
 function productFromBody(body: ProductBody): Product {
-  return { sku: body.sku, name: body.name, priceCents: body.price_cents, stock: body.stock };
+  return {
+    sku: body.sku,
+    name: body.name,
+    priceCents: body.price_cents,
+    discountPercent: body.discount_percent,
+    stock: body.stock,
+  };
 }
 
 function cartFromBody(body: CartBody): Cart {
