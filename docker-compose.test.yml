@@ -13,15 +13,14 @@ services:
       timeout: 3s
       retries: 5
 
-  shop-rs-api:
+  shop-java-api:
     build:
       context: .
-      dockerfile: shop-rs-api/Dockerfile
+      dockerfile: shop-java-api/Dockerfile
     ports:
       - "3000"
     environment:
       DATABASE_URL: postgres://${SHOP_DB_USER}:${SHOP_DB_PASSWORD}@shop-db:5432/${SHOP_DB_NAME}
-      RUST_LOG: shop_rs_api=info
     depends_on:
       shop-db:
         condition: service_healthy

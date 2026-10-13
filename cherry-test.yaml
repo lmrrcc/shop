@@ -7,8 +7,8 @@ defaults:
 
 adapters:
   shop:
-    command: cargo
-    args: [run, --target-dir, target/adapter, -p, shop-adapter, --quiet, --]
+    command: sh
+    args: [tools/shop-adapter/run.sh]
     timeout_secs: 1800
 
 projects:
@@ -17,7 +17,9 @@ projects:
     diff_base: main
     compose: docker-compose.test.yml
     packages:
-      shop-rs-api:
+      shop-java-api:
+        adapter: maven
+        manifest: shop-java-api/pom.xml
         kinds: [unit, integration]
         integration:
           adapter: shop
@@ -50,7 +52,7 @@ projects:
           scope: shop_checkout
     services:
       api:
-        service: shop-rs-api
+        service: shop-java-api
         port: 3000
         health: /health
       db:
